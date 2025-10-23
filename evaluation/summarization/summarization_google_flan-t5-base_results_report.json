@@ -1,0 +1,67 @@
+{
+  "binary_metrics": {
+    "total_samples": 20,
+    "valid_predictions": 20,
+    "failure_count": 0,
+    "coverage": 1.0,
+    "overall_accuracy": 0.2,
+    "accuracy": 0.2,
+    "precision": 0.2,
+    "recall": 1.0,
+    "f1": 0.3333,
+    "true_positive": 4,
+    "true_negative": 0,
+    "false_positive": 16,
+    "false_negative": 0
+  },
+  "fine_grained_metrics": {
+    "average_score": 1.2655,
+    "score_std": 0.1964,
+    "average_confidence": 0.572,
+    "severity_distribution": {
+      "factual": 0,
+      "slightly_incorrect": 1,
+      "strongly_hallucinated": 19
+    },
+    "component_means": {
+      "llm_scores": 1.95,
+      "algorithmic_scores": 0.237,
+      "entity_mismatch": 0.1485,
+      "fact_contradiction": 0.1415,
+      "semantic_drift": 0.0115
+    },
+    "correlations": {
+      "llm_scores": {
+        "algorithmic_scores": 0.1744,
+        "entity_mismatch": 0.1104,
+        "fact_contradiction": 0.1065,
+        "semantic_drift": 0.1057
+      },
+      "algorithmic_scores": {
+        "llm_scores": 0.1744,
+        "entity_mismatch": 0.6464,
+        "fact_contradiction": 0.5992,
+        "semantic_drift": 0.6041
+      },
+      "entity_mismatch": {
+        "llm_scores": 0.1104,
+        "algorithmic_scores": 0.6464,
+        "fact_contradiction": -0.2233,
+        "semantic_drift": 0.9342
+      },
+      "fact_contradiction": {
+        "llm_scores": 0.1065,
+        "algorithmic_scores": 0.5992,
+        "entity_mismatch": -0.2233,
+        "semantic_drift": -0.2139
+      },
+      "semantic_drift": {
+        "llm_scores": 0.1057,
+        "algorithmic_scores": 0.6041,
+        "entity_mismatch": 0.9342,
+        "fact_contradiction": -0.2139
+      }
+    },
+    "accuracy_severity_correlation": 0.4696
+  }
+}

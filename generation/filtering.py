@@ -1,72 +1,26 @@
 import argparse
 import json
-import os
 import random
-import time
 from pathlib import Path
-from typing import Tuple
+from typing import Iterable, Dict, Any
 
-import openai
-
-
-try:
-    from openai import OpenAI  # type: ignore
-except ImportError:
-    OpenAI = None  # type: ignore
+from llm.free_llm import generate_text
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 DATA_DIR = SCRIPT_DIR.parent / "data"
 
 
-def _configure_openai() -> Tuple[bool, object]:
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise EnvironmentError(
-            "Set the OPENAI_API_KEY environment variable before running the script."
-        )
-
-    api_base = os.getenv("OPENAI_BASE_URL") or os.getenv("OPENAI_API_BASE")
-    organization = os.getenv("OPENAI_ORG_ID") or os.getenv("OPENAI_ORGANIZATION")
-
-    if OpenAI is not None:
-        client_kwargs = {"api_key": api_key}
-        if api_base:
-            client_kwargs["base_url"] = api_base
-        if organization:
-            client_kwargs["organization"] = organization
-        client = OpenAI(**client_kwargs)
-        return True, client
-
-    openai.api_key = api_key
-    if api_base:
-        openai.api_base = api_base
-    if organization:
-        openai.organization = organization
-    return False, openai
-
-
-_USE_CLIENT, _CLIENT = _configure_openai()
-
-
-def _chat_completion(**kwargs):
-    if _USE_CLIENT:
-        response = _CLIENT.chat.completions.create(**kwargs)
-        return response.choices[0].message.content
-    response = openai.ChatCompletion.create(**kwargs)
-    return response["choices"][0]["message"]["content"]
-
-
-def _resolve_error(name: str):
-    if hasattr(openai, "error") and hasattr(openai.error, name):
-        return getattr(openai.error, name)
-    return getattr(openai, name, Exception)
-
-
-RateLimitError = _resolve_error("RateLimitError")
-ServiceUnavailableError = _resolve_error("ServiceUnavailableError")
-Timeout = _resolve_error("Timeout")
-APIError = _resolve_error("APIError")
-APIConnectionError = _resolve_error("APIConnectionError")
+def _invoke_llm(
+    messages: Iterable[Dict[str, Any]],
+    *,
+    temperature: float = 0.0,
+    max_new_tokens: int = 256,
+) -> str:
+    return generate_text(
+        messages,
+        temperature=temperature,
+        max_new_tokens=max_new_tokens,
+    )
 
 def get_qa_res(knowledge, question, answer1, answer2, instruction):
 
@@ -80,29 +34,11 @@ def get_qa_res(knowledge, question, answer1, answer2, instruction):
                                     "\n#Your Choice#: "} 
     ]
 
-    while True:
-        try:
-            return _chat_completion(
-                model="gpt-3.5-turbo",
-                messages=message,
-                temperature=0.0,
-                max_tokens=256,
-            )
-        except RateLimitError:
-            print('openai.error.RateLimitError\nRetrying...')
-            time.sleep(60)
-        except ServiceUnavailableError:
-            print('openai.error.ServiceUnavailableError\nRetrying...')
-            time.sleep(20)
-        except Timeout:
-            print('openai.error.Timeout\nRetrying...')
-            time.sleep(20)
-        except APIError:
-            print('openai.error.APIError\nRetrying...')
-            time.sleep(20)
-        except APIConnectionError:
-            print('openai.error.APIConnectionError\nRetrying...')
-            time.sleep(20)
+    return _invoke_llm(
+        message,
+        temperature=0.0,
+        max_new_tokens=128,
+    ).strip()
 
 
 def get_dialogue_res(knowledge, dialog, response1, response2, instruction):
@@ -116,29 +52,11 @@ def get_dialogue_res(knowledge, dialog, response1, response2, instruction):
                                     "\n#Your Choice#: "}
     ]
 
-    while True:
-        try:
-            return _chat_completion(
-                model="gpt-3.5-turbo",
-                messages=message,
-                temperature=0.0,
-                max_tokens=256,
-            )
-        except RateLimitError:
-            print('openai.error.RateLimitError\nRetrying...')
-            time.sleep(60)
-        except ServiceUnavailableError:
-            print('openai.error.ServiceUnavailableError\nRetrying...')
-            time.sleep(20)
-        except Timeout:
-            print('openai.error.Timeout\nRetrying...')
-            time.sleep(20)
-        except APIError:
-            print('openai.error.APIError\nRetrying...')
-            time.sleep(20)
-        except APIConnectionError:
-            print('openai.error.APIConnectionError\nRetrying...')
-            time.sleep(20)
+    return _invoke_llm(
+        message,
+        temperature=0.0,
+        max_new_tokens=128,
+    ).strip()
 
 
 def get_summarization_res(document, summary1, summary2, instruction):
@@ -151,29 +69,11 @@ def get_summarization_res(document, summary1, summary2, instruction):
                                     "\n#Your Choice#: "}
     ]
 
-    while True:
-        try:
-            return _chat_completion(
-                model="gpt-3.5-turbo",
-                messages=message,
-                temperature=0.0,
-                max_tokens=256,
-            )
-        except RateLimitError:
-            print('openai.error.RateLimitError\nRetrying...')
-            time.sleep(60)
-        except ServiceUnavailableError:
-            print('openai.error.ServiceUnavailableError\nRetrying...')
-            time.sleep(20)
-        except Timeout:
-            print('openai.error.Timeout\nRetrying...')
-            time.sleep(20)
-        except APIError:
-            print('openai.error.APIError\nRetrying...')
-            time.sleep(20)
-        except APIConnectionError:
-            print('openai.error.APIConnectionError\nRetrying...')
-            time.sleep(20)
+    return _invoke_llm(
+        message,
+        temperature=0.0,
+        max_new_tokens=128,
+    ).strip()
 
 
 def filtering_qa_dataset(file1, file2, instruction, output_path):

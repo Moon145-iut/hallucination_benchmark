@@ -32,14 +32,13 @@ by ground-truth examples and leverage ChatGPT for sample selection.
    python -m spacy download en_core_web_sm
    python -m nltk.downloader punkt stopwords
    ```
-2. Configure your OpenAI credentials in the environment where you run the scripts (for example in VSCode's integrated terminal):
+2. (Optional) Select the open-source LLM you want to run locally or through Hugging Face.  
+   By default the toolkit loads `google/flan-t5-base`. To override this, set:
    ```
-   export OPENAI_API_KEY="sk-..."
-   # optional
-   export OPENAI_BASE_URL="https://..."      # custom endpoint, if any
-   export OPENAI_ORG_ID="org-..."            # organisation, if used
+   export FREE_LLM_MODEL="google/flan-t5-large"
    ```
-   On Windows PowerShell use `$Env:OPENAI_API_KEY="sk-..."`, etc.
+   On Windows PowerShell use `$Env:FREE_LLM_MODEL="google/flan-t5-large"`, etc.  
+   Any Hugging Face text2text model that fits in your environment should work.
 3. The scripts automatically resolve resource files relative to the repository, so you can run them either from the project root (`python generation/generate.py ...`) or from their respective subdirectories as described below.
 4. In VSCode, select the interpreter that has these dependencies installed (`Ctrl+Shift+P` → `Python: Select Interpreter`). This removes the `reportMissingImports` diagnostics from Pylance.
 
@@ -93,14 +92,24 @@ Users can use our provided instructions and codes on their own datasets to gener
 
 ## Evaluation
 
-In evaluation, we randomly sample a ground-truth or a hallucinated output for each data. For example, if the text is a hallucinated answer, the LLM should recognize the hallucination and output "Yes", which means the text contains hallucinations. If the text is a ground-truth answer, the LLM should output "No" indicating that there is no hallucination.
-    
-- `task`: evaluated task, i.e., `qa`, `dialogue`, or `summarization`.
-- `model`: evaluated model, e.g., ChatGPT (`gpt-3.5-turbo`), GPT-3 (`davinci`).
+The evaluation pipeline now combines binary hallucination detection with fine-grained severity scoring.  
+For every datum we randomly surface either the factual or hallucinated answer, prompt the configured free LLM to reply `Yes/No`, and then run a second-stage algorithm (entity overlap, factual contradictions, semantic drift) to refine a 0–2 severity score.
+
+Running the script produces two outputs per task/model pair:
+
+- `<task>_<model>_results.jsonl`: per-sample records containing the binary decision, severity metrics, and component scores.
+- `<task>_<model>_results_report.json`: aggregated binary metrics (accuracy/precision/recall/F1), severity statistics, and correlations between severity and detection accuracy.
+
+Command options:
+
+- `--task`: `qa`, `dialogue`, or `summarization`.
+- `--model`: Hugging Face model name (defaults to `google/flan-t5-base`). Any compatible seq2seq instruction model can be supplied here or via `FREE_LLM_MODEL`.
+- `--seed`: Optional RNG seed to make hallucinated/factual sampling reproducible.
+- `--visualize-dir`: Optional directory to save the severity distribution plots.
 
 ```
 cd evaluation
-python evaluate.py --task qa --model gpt-3.5-turbo
+python evaluate.py --task qa --model google/flan-t5-base --seed 123
 ```
 
 
@@ -114,7 +123,7 @@ Based on the samples that LLMs succeed or fail to recognize, we can analyze the 
 
 ```
 cd analysis
-python analyze.py --task qa --result ../evaluation/qa/qa_gpt-3.5-turbo_result.json --category all
+python analyze.py --task qa --result ../evaluation/qa/qa_google_flan-t5-base_results.jsonl --category all
 ```
 
 ## License

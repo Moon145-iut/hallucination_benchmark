@@ -2,6 +2,10 @@ import json
 from nltk.tokenize import RegexpTokenizer
 from gensim.utils import simple_preprocess
 from nltk.corpus import stopwords
+import numpy as np
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+import matplotlib.pyplot as plt
+import seaborn as sns
 import spacy
 from gensim.models import Phrases
 from gensim.models import LdaModel
