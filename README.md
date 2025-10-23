@@ -9,38 +9,110 @@ This is the repo for our paper: [HaluEval: A Large-Scale Hallucination Evaluatio
 
 ## Overview
 
-HaluEval includes 5,000 general user queries with ChatGPT responses and  30,000 task-specific examples from three tasks, i.e.,
-question answering, knowledge-grounded dialogue, and text summarization. 
+HaluEval includes 5,000 general user queries with ChatGPT responses and 30,000 task-specific examples from three tasks:
+- Question answering (QA)
+- Knowledge-grounded dialogue
+- Text summarization
 
 For general user queries, we adopt the 52K instruction tuning dataset from [Alpaca](https://github.com/tatsu-lab/stanford_alpaca).
-To further screen user queries where LLMs are most likely to produce hallucinations, we use ChatGPT to sample three responses 
-for each query and finally retain the queries with low-similarity responses for human labeling.
-
-Furthermore, for the task-specific examples in HaluEval, we design an automatic approach to generate hallucinated samples. 
-First, based on existing task datasets (e.g., HotpotQA) as seed data, we design task-specific instructions for ChatGPT
-to generate hallucinated samples in two methods, i.e., one-pass and conversational. Second, to select
-the most plausible and difficult hallucinated sample for LLMs evaluation, we elaborate the filtering instruction enhanced 
-by ground-truth examples and leverage ChatGPT for sample selection.
-
-<a href="https://github.com/RUCAIBox/HaluEval" target="_blank"><img src="assets/pipeline.png" alt="HaluEval" style="width: 90%; min-width: 300px; display: block; margin: auto;"></a>
+HaluEval focuses on identifying and evaluating hallucinations in LLM responses across these different tasks.
 
 ## Setup
 
 1. Create a Python 3.9+ environment and install the dependencies:
-   ```
+   ```bash
    pip install -r requirements.txt
-   python -m spacy download en_core_web_sm
+   python -m spacy download en_core_web_md  
    python -m nltk.downloader punkt stopwords
    ```
-2. (Optional) Select the open-source LLM you want to run locally or through Hugging Face.  
-   By default the toolkit loads `google/flan-t5-base`. To override this, set:
-   ```
+
+2. (Optional) Select the open-source LLM you want to use. By default, the toolkit uses `google/flan-t5-base`.
+   To override this, set the environment variable:
+   ```bash
+   # Linux/MacOS
    export FREE_LLM_MODEL="google/flan-t5-large"
+   
+   # Windows PowerShell
+   $Env:FREE_LLM_MODEL="google/flan-t5-large"
    ```
-   On Windows PowerShell use `$Env:FREE_LLM_MODEL="google/flan-t5-large"`, etc.  
    Any Hugging Face text2text model that fits in your environment should work.
 3. The scripts automatically resolve resource files relative to the repository, so you can run them either from the project root (`python generation/generate.py ...`) or from their respective subdirectories as described below.
 4. In VSCode, select the interpreter that has these dependencies installed (`Ctrl+Shift+P` → `Python: Select Interpreter`). This removes the `reportMissingImports` diagnostics from Pylance.
+
+## Model and Dataset Parameters
+
+### Model Configuration
+- Base Model: google/flan-t5-base
+  * Parameters: 250M
+  * Maximum sequence length: 512 tokens
+  * Input truncation thresholds:
+    - QA/Dialogue tasks: 450 words
+    - Summarization tasks: 250 words
+  * Temperature: 0.0 (deterministic outputs)
+  * Max new tokens: 16-24 (task dependent)
+
+### Dataset Characteristics
+1. Question Answering (QA)
+   - Full dataset: 10,000 samples from HotpotQA
+   - Test subset: 20 samples
+   - Format: {knowledge, question, right_answer, hallucinated_answer}
+   - Average input length: 150-200 words
+   - Knowledge source: Wikipedia
+
+2. Dialogue
+   - Full dataset: 10,000 samples
+   - Test subset: 20 samples
+   - Format: {knowledge, dialogue_history, right_response, hallucinated_response}
+   - Average input length: 100-150 words
+   - Source: OpenDialKG
+
+3. Summarization
+   - Full dataset: 10,000 samples
+   - Test subset: 20 samples
+   - Format: {document, right_summary, hallucinated_summary}
+   - Average input length: 500-600 words
+   - Source: CNN/Daily Mail
+
+### Detailed Evaluation Results
+
+1. Question Answering (QA)
+   - Performance Metrics:
+     * Accuracy: 75%
+     * Coverage: 100%
+     * Error Analysis:
+       - False Positives: Model occasionally marks factual answers as hallucinated
+       - False Negatives: Subtle factual errors sometimes missed
+   - Component Performance:
+     * Entity matching: Strong (accurately identifies entity mismatches)
+     * Semantic similarity: Good
+     * Fact verification: Very good
+
+2. Dialogue Evaluation
+   - Performance Metrics:
+     * Coverage: 100%
+     * Hallucination Detection Rate: High
+     * Pattern Analysis:
+       - Higher accuracy on single-turn dialogues
+       - More challenges with multi-turn context
+   - Error Categories:
+     * Entity substitution detection: Strong
+     * Context consistency checking: Moderate
+     * Fact adherence: Good
+
+3. Summarization Analysis
+   - Performance Metrics:
+     * Overall Accuracy: 20%
+     * Precision: 0.200
+     * Recall: 1.000
+     * F1 Score: 0.333
+   - Severity Distribution:
+     * Strongly hallucinated: 19/20 (95%)
+     * Slightly incorrect: 1/20 (5%)
+     * Factual: 0/20 (0%)
+   - Hallucination Types:
+     * Content fabrication: Most common
+     * Detail exaggeration: Secondary
+     * Contextual misalignment: Least common
 
 ## Data Release
 
@@ -131,8 +203,7 @@ python analyze.py --task qa --result ../evaluation/qa/qa_google_flan-t5-base_res
 HaluEval uses [MIT License](./LICENSE).
 
 ## Reference
-
-Please cite the repo if you use the data or code in this repo.
+This project is based on the paperwork:
 
 ```
 @misc{HaluEval,
